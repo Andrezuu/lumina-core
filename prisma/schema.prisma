@@ -1,0 +1,104 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["lumina"]
+}
+
+// ==========================================
+// 1. USUARIOS Y AUTENTICACIÓN
+// ==========================================
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions          PracticeSession[]
+  savedProgressions SavedProgression[]
+
+  @@map("users")
+  @@schema("lumina")
+}
+
+// ==========================================
+// 2. SESIONES DE PRÁCTICA (El "Lienzo")
+// ==========================================
+model PracticeSession {
+  id               String    @id @default(uuid())
+  userId           String
+  title            String?
+  detectedTonality String?
+  startedAt        DateTime  @default(now())
+  endedAt          DateTime?
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blocks SongBlock[]
+
+  @@map("practice_sessions")
+  @@schema("lumina")
+}
+
+// ==========================================
+// 3. BLOQUES ESTRUCTURALES (Etiquetas)
+// ==========================================
+model SongBlock {
+  id         String   @id @default(uuid())
+  sessionId  String
+  label      String
+  blockOrder Int
+  keyCenter  String?
+  createdAt  DateTime @default(now())
+
+  session PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  chords  SessionChord[]
+
+  @@map("song_blocks")
+  @@schema("lumina")
+}
+
+// ==========================================
+// 4. ACORDES DETECTADOS (El Core Académico)
+// ==========================================
+model SessionChord {
+  id      String @id @default(uuid())
+  blockId String
+
+  chordName String
+  rootNote  String
+  quality   String
+
+  detectedAt DateTime @default(now())
+  durationMs Int?
+
+  wasEdited     Boolean @default(false)
+  originalChord String?
+
+  block SongBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@map("session_chords")
+  @@schema("lumina")
+}
+
+// ==========================================
+// 5. CHORDBOOK (Libreta Digital)
+// ==========================================
+model SavedProgression {
+  id         String   @id @default(uuid())
+  userId     String
+  name       String
+  tonality   String
+  chordsData Json
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_progressions")
+  @@schema("lumina")
+}
