@@ -36,41 +36,35 @@ export const sessionsRepository = {
 
   // Stats: conteos y tonalidades agregadas en una sola query
   async getStatsByUser(userId: string) {
-    const [totalSessions, chordsAgg, tonalities] = await Promise.all([
+    const [totalSessions, totalChords, editedChords, tonalities] = await Promise.all([
       // Total de sesiones finalizadas
       prisma.practiceSession.count({
         where: { userId, endedAt: { not: null } },
       }),
 
-      // Total de acordes y cuántos fueron editados
-      prisma.sessionChord.aggregate({
-        _count: { id: true },
-        _sum: { wasEdited: true } as never, // wasEdited es Boolean, usamos groupBy abajo
+      // Total de acordes en sesiones finalizadas del usuario
+      prisma.sessionChord.count({
         where: {
-          block: {
-            session: { userId, endedAt: { not: null } },
-          },
+          block: { session: { userId, endedAt: { not: null } } },
         },
       }),
 
-      // Tonalidades detectadas en sesiones del usuario (para calcular la favorita)
+      // Total de acordes editados
+      prisma.sessionChord.count({
+        where: {
+          wasEdited: true,
+          block: { session: { userId, endedAt: { not: null } } },
+        },
+      }),
+
+      // Tonalidades detectadas para calcular la favorita
       prisma.practiceSession.findMany({
         where: { userId, endedAt: { not: null }, detectedTonality: { not: null } },
         select: { detectedTonality: true },
       }),
     ]);
 
-    // Conteo de acordes editados con groupBy (Boolean no tiene _sum en Prisma)
-    const editedAgg = await prisma.sessionChord.count({
-      where: {
-        wasEdited: true,
-        block: { session: { userId, endedAt: { not: null } } },
-      },
-    });
-
-    const totalChords = chordsAgg._count.id;
-
-    // Tonalidad favorita: la que más aparece en detectedTonality
+    // Tonalidad favorita: la que más aparece
     const tonalityMap = new Map<string, number>();
     for (const s of tonalities) {
       const t = s.detectedTonality!;
@@ -81,7 +75,7 @@ export const sessionsRepository = {
         ? [...tonalityMap.entries()].sort((a, b) => b[1] - a[1])[0][0]
         : null;
 
-    return { totalSessions, totalChords, editedChords: editedAgg, favoriteTonality };
+    return { totalSessions, totalChords, editedChords, favoriteTonality };
   },
 
   findById(id: string) {
