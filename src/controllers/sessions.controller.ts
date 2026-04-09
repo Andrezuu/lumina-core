@@ -13,6 +13,28 @@ export const getAll = async (req: Request, res: Response, next: NextFunction): P
   }
 };
 
+// ── GET /sessions/history ─────────────────────────────────────────────────────
+export const getHistory = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { sub } = req.user as JwtPayload;
+    const sessions = await sessionsService.getHistory(sub);
+    res.json({ sessions });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /sessions/stats ───────────────────────────────────────────────────────
+export const getStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { sub } = req.user as JwtPayload;
+    const stats = await sessionsService.getStats(sub);
+    res.json({ stats });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ── GET /sessions/:id ─────────────────────────────────────────────────────────
 export const getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -29,7 +51,6 @@ export const start = async (req: Request, res: Response, next: NextFunction): Pr
   try {
     const { sub } = req.user as JwtPayload;
     const { title } = req.body as { title?: string };
-
     const session = await sessionsService.start({ userId: sub, title });
     res.status(201).json({ session });
   } catch (err) {
@@ -46,12 +67,7 @@ export const update = async (req: Request, res: Response, next: NextFunction): P
       detectedTonality?: string;
       end?: boolean;
     };
-
-    const session = await sessionsService.update(req.params.id, sub, {
-      title,
-      detectedTonality,
-      end,
-    });
+    const session = await sessionsService.update(req.params.id, sub, { title, detectedTonality, end });
     res.json({ session });
   } catch (err) {
     next(err);

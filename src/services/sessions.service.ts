@@ -9,12 +9,28 @@ export interface StartSessionInput {
 export interface UpdateSessionInput {
   title?: string;
   detectedTonality?: string;
-  end?: boolean; // si true, setea endedAt = now
+  end?: boolean;
 }
 
 export const sessionsService = {
   async getAll(userId: string) {
     return sessionsRepository.findAllByUser(userId);
+  },
+
+  async getHistory(userId: string) {
+    return sessionsRepository.findHistoryByUser(userId);
+  },
+
+  async getStats(userId: string) {
+    const { totalSessions, totalChords, editedChords, favoriteTonality } =
+      await sessionsRepository.getStatsByUser(userId);
+
+    const accuracyPct =
+      totalChords > 0
+        ? Math.round((1 - editedChords / totalChords) * 100 * 100) / 100
+        : 100;
+
+    return { totalSessions, totalChords, editedChords, accuracyPct, favoriteTonality };
   },
 
   async getById(id: string, userId: string) {
@@ -25,10 +41,7 @@ export const sessionsService = {
   },
 
   async start(input: StartSessionInput) {
-    return sessionsRepository.create({
-      userId: input.userId,
-      title: input.title,
-    });
+    return sessionsRepository.create({ userId: input.userId, title: input.title });
   },
 
   async update(id: string, userId: string, input: UpdateSessionInput) {

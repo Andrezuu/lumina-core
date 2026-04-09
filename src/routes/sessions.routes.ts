@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAll, getById, start, update } from '../controllers/sessions.controller';
+import { getAll, getHistory, getStats, getById, start, update } from '../controllers/sessions.controller';
 import { getAllBySession, create as createBlock } from '../controllers/blocks.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
 
@@ -10,6 +10,13 @@ router.use(requireAuth);
 
 // GET  /api/v1/sessions
 router.get('/', getAll);
+
+// ⚠️  Rutas estáticas ANTES de /:id para evitar conflictos de parámetro
+// GET  /api/v1/sessions/history
+router.get('/history', getHistory);
+
+// GET  /api/v1/sessions/stats
+router.get('/stats', getStats);
 
 // GET  /api/v1/sessions/:id
 router.get('/:id', getById);
