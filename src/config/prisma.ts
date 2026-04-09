@@ -1,9 +1,14 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaNeonHttp } from '@prisma/adapter-neon';
+import { PrismaNeon } from '@prisma/adapter-neon';
+import { neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
 import { ENV } from './env';
 
+// WebSockets necesarios para el adapter TCP de Neon (soporta transacciones)
+neonConfig.webSocketConstructor = ws;
+
 function createPrismaClient() {
-  const adapter = new PrismaNeonHttp(ENV.DATABASE_URL, {});
+  const adapter = new PrismaNeon({ connectionString: ENV.DATABASE_URL });
   return new PrismaClient({ adapter });
 }
 
